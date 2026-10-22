@@ -1,0 +1,189 @@
+O Controle de Estoque Rápido
+
+xampps:
+Tabela 1: usuarios (Gerencia o Login e a Segurança)
+(Continua exatamente igual, excelente e completa!)
+
+Colunas:
+
+id (INT, AUTO_INCREMENT, PRIMARY KEY) -> Identificador único.
+
+usuario (VARCHAR(50), NOT NULL, UNIQUE) -> Nome de login.
+
+senha (VARCHAR(50), NOT NULL) -> Senha de acesso.
+
+#######################################################################################################################
+Tabela 2: produtos (O Catálogo / Cadastro Base)
+Esta tabela agora guarda apenas a identidade do produto e seu preço. A quantidade não fica mais fixada aqui,
+pois ela será calculada dinamicamente.
+
+Colunas (Variáveis) e seus papéis:
+
+id (Tipo: INT | Restrições: AUTO_INCREMENT, PRIMARY KEY)
+
+O que faz: Identificador único de cada produto cadastrado.
+
+Por que existe: Essencial para relacionar o produto com as suas movimentações de entrada e saída.
+
+nome (Tipo: VARCHAR(100) | Restrições: NOT NULL)
+
+O que faz: Armazena a descrição ou o nome do item (ex: Caderno Universitário, Caneta Azul).
+
+Por que existe: Para identificar visualmente o que é o item no estoque.
+
+preco (Tipo: DECIMAL(10,2) | Restrições: NOT NULL)
+
+O que faz: Guarda o valor monetário unitário do produto.
+
+Por que existe: Mantém a precisão financeira exata para cálculos e relatórios gerenciais do inventário.
+
+#######################################################################################################################
+Tabela 3: movimentacoes (O Histórico de Entradas e Saídas - NOVA!)Esta é a tabela responsável por registrar todas as
+compras (entradas) e vendas/baixas (saídas) que acontecem na escola ou comércio.Colunas (Variáveis) e seus papéis:
+id (Tipo: INT | Restrições: AUTO_INCREMENT, PRIMARY KEY)O que faz: Identificador único de cada movimentação.produto_id
+(Tipo: INT | Restrições: NOT NULL)O que faz: Guarda o ID do produto que está sendo movimentado
+ (faz a ligação/relacionamento com a tabela produtos).Por que existe: Para sabermos exatamente a qual produto pertence
+ aquela quantidade que entrou ou saiu.tipo (Tipo: VARCHAR(10) | Restrições: NOT NULL)O que faz: Armazena se a operação
+  foi uma 'ENTRADA' (compra/reposição) ou uma 'SAIDA' (venda/baixa).quantidade (Tipo: INT | Restrições: NOT NULL)
+  O que faz: Guarda o valor numérico daquela operação específica (ex: comprou 1000, vendeu 500).Por que existe:
+  É com base nesses valores que o sistema faz a conta matemática ($\text{Total de Entradas} - \text{Total de Saídas}$)
+  para descobrir o estoque atual na tela.
+
+
+
+#######################################################################################################################
+21/10/26
+conexao.py: É a base central de dados. Ele guarda apenas os dados de acesso ao XAMPP (localhost, root, estoque_db)
+para que os outros ficheiros apenas peçam a ligação sem precisar repetir código.
+
+auth.py: Gere a segurança e os utilizadores. É responsável por cadastrar novas credenciais e validar o login (permitindo ou negando o
+acesso de quem tenta entrar no sistema).
+
+gerar_produtos.py: É o script utilitário de carga em lote. Ele serviu para preencher o catálogo do supermercado no XAMPP com os 100 produtos iniciais de uma só vez.
+
+movimentacoes.py: Controla o movimento de stock (entradas e saídas) e calcula o saldo atual em tempo real dos produtos da loja.
+
+
+#######################################################################################################################
+🗂️ O Papel de Cada Ficheiro no Sistema
+conexao.py
+
+É a ponte com o XAMPP (MySQL). Ele guarda apenas os dados de acesso (localhost, root, estoque_db). Sempre
+que qualquer outro ficheiro precisa de falar com a base de dados, ele apenas pede a ligação (conectar()) sem precisar
+de repetir código.
+
+auth.py
+
+É o segurança do supermercado. Ele gere os utilizadores, valida a senha no login e faz o registo de novas
+contas (garantindo também que o e-mail inserido é válido através de Regex). Se as credenciais estiverem erradas,
+bloqueia o acesso; se estiverem certas, deixa entrar.
+
+gerar_produtos.py
+
+ É o responsável pela carga inicial automática. Quando o sistema arranca pela primeira vez (e a base de
+dados está vazia), ele insere os 100 produtos no catálogo com os respetivos preços em Euros (€) e os stocks iniciais
+personalizados.
+
+movimentacoes.py
+
+ Controla o armazém no dia a dia. É ele que regista as ENTRADAS (reposições de stock) e as SAIDAS
+(vendas/baixas), calculando o saldo atual de cada produto em tempo real na base de dados.
+
+main.py
+
+É o único ponto de entrada do sistema. Quando clica em "Play" nele, ele atua como o cérebro que verifica automaticamente
+ a base de dados, chama o gerador de produtos se estiver vazia e arranca o sistema.
+
+ interface.py (A Camada Visual / Tkinter)
+
+É o ficheiro dedicado exclusivamente aos ecrãs e interações visuais. Gere as janelas de login, registo de
+novos utilizadores com validação por Regex, o catálogo com tabela e barra de rolagem (scrollbar) formatado em Euros (€)
+, e os botões de controlo de stock.
+
+#######################################################################################################################
+1. main.py (O Cérebro Inicializador)
+
+Este ficheiro é o ponto de partida absoluto do sistema. Quando clica em Play, é
+aqui que tudo começa.
+Linha 1: from gerar_produtos import popular_produtos_iniciais -> Importa a função do outro
+ficheiro responsável por verificar e encher a base de dados com os produtos iniciais caso ela esteja vazia.
+
+Linha 2: from interface import iniciar_sistema -> Importa a função que dá início a toda a parte gráfica
+(janelas, botões, etc.) do Tkinter.
+
+Linha 4-13: def main(): -> Define a função principal que organiza a ordem de
+arranque do programa.
+
+Linha 7: print("--- A iniciar o Sistema de Supermercado ---") -> Escreve uma mensagem de aviso no
+terminal do PyCharm a indicar que o programa começou a correr.
+
+Linha 10: popular_produtos_iniciais() -> Executa a
+verificação e carga automática dos produtos no XAMPP.
+
+Linha 13: iniciar_sistema() -> Abre a primeira janela gráfica
+do sistema (o ecrã de login).
+
+Linha 15-16: if __name__ == "__main__": main() -> O padrão do Python que diz: "Se este
+ficheiro for executado diretamente, corre a função main()".
+
+2. conexao.py (A Ponte com o XAMPP)
+
+Este ficheiro serve unicamente para centralizar os dados de ligação à base de dados
+MySQL.
+
+Linha 1: import mysql.connector -> Importa a biblioteca oficial do Python para comunicar com o MySQL.
+
+Linha 3-11: def conectar(): -> Cria a função reutilizável de conexão.
+
+Linha 4-9: Retorna a ligação estabelecida usando
+o servidor local (localhost), utilizador (root), sem senha, e apontando para a base de dados (estoque_db).
+
+3. auth.py (A Segurança e Contas)
+
+Gere tudo o que diz respeito a utilizadores, senhas e segurança.
+
+ Linha 1-3: Importações necessárias (conexão e manipulação de erros do MySQL).
+
+Linha 6-17: def validar_login (usuario, senha): -> Verifica se o utilizador e a senha inseridos correspondem a uma conta existente na tabela usuarios.
+
+Linha 20-32: def cadastrar_usuario(usuario, email, senha): -> Insere uma nova conta na base de dados, salvando o nome de
+ utilizador, o e-mail validado por Regex e a senha.
+
+4. gerar_produtos.py (A Carga Inicial)
+
+Contém a lista dos 100 produtos e insere-os no XAMPP se a base de dados estiver
+ vazia.
+ Linha 1-2: Importações da conexão e do MySQL.
+ Linha 5-132: def popular_produtos_iniciais(): -> Função que faz
+  a verificação.
+ Linha 9-10: Conta quantos produtos existem na tabela produtos. Se o total for 0 (vazio), o código
+  prossegue para injetar a lista completa com os preços em Euros (€) e os stocks iniciais personalizados.
+
+5. movimentacoes.py (O Controlo de Armazém)
+
+Gere o dia a dia do stock.
+
+Linha 1-18: def registrar_movimentacao(produto_id, tipo, quantidade): -> Insere na tabela movimentacoes se o produto
+sofreu uma ENTRADA (reposição) ou uma SAIDA (venda/baixa).
+
+Linha 21-38: def consultar_estoque(produto_id): -> Faz uma operação matemática na base de dados somando todas as
+ entradas e subtraindo todas as saídas para devolver o saldo atual exato daquele produto em tempo real.
+
+6. interface.py (A Camada Visual / Tkinter)
+Cuida de toda a experiência visual do utilizador.
+
+Linha 1-5: Importações do Tkinter, caixas de mensagem (messagebox), tabelas (ttk) e validações de e-mail por Regex.
+
+Linha 8-154: def abrir_janela_principal(usuario_logado, janela_login): -> Cria o painel principal após o login bem-sucedido.
+
+Linha 17-43: def ver_produtos(): -> Abre uma janela secundária com uma tabela bonita equipada com barra de rolagem
+vertical (scrollbar) e formatação dos preços em Euros (€).
+
+Linha 45-92: def acao_movimentacao(tipo): -> Lê o que o utilizador escreveu (seja por ID único ou por nomes múltiplos
+separados por vírgula) e aplica a entrada ou saída em lote.
+
+Linha 94-135: def consultar(): -> Lê os filtros de pesquisa e vai buscar o stock atualizado ao armazém.
+PNG
+
+Linha 156-215: def iniciar_sistema(): -> Constrói a janela inicial de Login e a sub-janela de Criar Conta
+(com validação estrita de e-mail por Regex).
